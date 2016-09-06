@@ -31,19 +31,26 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.Extension;
+import hudson.Launcher;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.Node;
+import hudson.model.TaskListener;
 import hudson.security.ACL;
 import hudson.slaves.Cloud;
+import hudson.slaves.ComputerLauncher;
 import hudson.slaves.NodeProvisioner;
+import hudson.slaves.SlaveComputer;
+import hudson.util.ArgumentListBuilder;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
+import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -116,20 +123,55 @@ public class HyperCloud extends Cloud {
     private class ProvisioningCallback implements Callable<Node> {
 
         private final HyperSlaveTemplate template;
+        private final Label label;
 
         public ProvisioningCallback(HyperSlaveTemplate template, Label label) {
             this.template = template;
+            this.label = label;
         }
 
         @Override
         public Node call() throws Exception {
 
-            HyperSlave slave = null;
-            // TODO create a jenkins slave on Hyper_ using a JNLP slave container
+            final String labelString = label == null ? null : label.toString();
+            final String name = (label == null ? "" : labelString+"_") + Long.toHexString(System.nanoTime());
+
+            HyperSlave slave = new HyperSlave(name, template.getRemoteFSRoot(), labelString, new ComputerLauncher() {
+                @Override
+                public void launch(SlaveComputer computer, TaskListener listener) throws IOException, InterruptedException {
+                    String rootUrl = Jenkins.getInstance().getRootUrl();;
+
+                    ArgumentListBuilder args = new ArgumentListBuilder()
+                            .add("hyper") // TODO path to Hyper CLI
+                            // .add("--config", "...")
+                            .add("run", "-d")
+                            .add("--workdir", template.getRemoteFSRoot())
+                            .add("--name", name)
+                            .add("--label", "org.jenkinsci.plugins.hyper.HyperCloud="+labelString);
+
+
+
+                    args.add(template.getImage())
+                            .add(String.format("java -jar slave.jar -jnlpUrl %s%s/slave-agent.jnlp -secret %s", rootUrl, computer.getUrl(), computer.getJnlpMac()));
+
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+                    int status = new Launcher.LocalLauncher(listener).launch()
+                            .cmds(args)
+                            .stdout(out).stderr(listener.getLogger())
+                            .join();
+
+                    if (status != 0) {
+                        throw new IOException("Failed to create Hyper_ slave container "+status);
+                    }
+                }
+            });
+
+            Jenkins.getInstance().addNode(slave);
 
             // now wait for slave to be online
             Date now = new Date();
-            Date timeout = new Date(now.getTime() + 1000 * 60); // TODO make timeout configurable
+            Date timeout = new Date(now.getTime() + 1000 * 900); // TODO make timeout configurable
             while (timeout.after(new Date())) {
                 if (slave.getComputer() == null) {
                     throw new IllegalStateException(

@@ -39,12 +39,10 @@ import java.util.Collections;
 
 public class HyperSlave extends AbstractCloudSlave {
 
+    private static final long serialVersionUID = 1L;
 
-    private final HyperCloud cloud;
-
-    public HyperSlave(@Nonnull HyperCloud cloud, @Nonnull String name, @Nullable String remoteFS, @Nullable String labelString, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
+    public HyperSlave(@Nonnull String name, @Nullable String remoteFS, @Nullable String labelString, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
         super(name, "ECS slave", remoteFS, 1, Mode.EXCLUSIVE, labelString, launcher, RetentionStrategy.NOOP, Collections.EMPTY_LIST);
-        this.cloud = cloud;
     }
 
 
