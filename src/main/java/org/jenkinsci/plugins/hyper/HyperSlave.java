@@ -33,6 +33,7 @@ import hudson.slaves.AbstractCloudSlave;
 import hudson.slaves.ComputerLauncher;
 import hudson.slaves.RetentionStrategy;
 import hudson.util.ArgumentListBuilder;
+import jenkins.model.Jenkins;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import javax.annotation.Nonnull;
@@ -46,12 +47,13 @@ public class HyperSlave extends AbstractCloudSlave {
     private static final Logger LOGGER = Logger.getLogger(HyperSlave.class.getName());
 
     private static final long serialVersionUID = 1L;
+    private final HyperCloud cloud;
     private String containerId;
 
-    public HyperSlave(@Nonnull String name, @Nullable String remoteFS, @Nullable String labelString, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
+    public HyperSlave(HyperCloud cloud, @Nonnull String name, @Nullable String remoteFS, @Nullable String labelString, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
         super(name, "ECS slave", remoteFS, 1, Mode.EXCLUSIVE, labelString, launcher, RetentionStrategy.NOOP, Collections.EMPTY_LIST);
+        this.cloud = cloud;
     }
-
 
     @Override
     public AbstractCloudComputer createComputer() {
@@ -61,18 +63,22 @@ public class HyperSlave extends AbstractCloudSlave {
     @Override
     protected void _terminate(TaskListener listener) throws IOException, InterruptedException {
         if (containerId != null) {
-            ArgumentListBuilder args = new ArgumentListBuilder()
-                    .add("hyper") // TODO path to Hyper CLI
-                    // .add("--config", "...")
-                    .add("rm", "-v", "-f")
-                    .add(containerId);
-            int status = new Launcher.LocalLauncher(listener).launch()
-                    .cmds(args)
-                    .stdout(listener.getLogger())
-                    .join();
 
-            if (status != 0) {
-                throw new IOException("Failed to remove Hyper_ slave container "+ containerId +". Status code " + status);
+            try (HyperConfigFile config = HyperCredentials.toConfigFile(cloud.getServer(), cloud.getCredentialsId(), Jenkins.getInstance())) {
+
+                ArgumentListBuilder args = new ArgumentListBuilder()
+                        .add("hyper") // TODO path to Hyper CLI
+                        .add("--config", config.getPath())
+                        .add("rm", "-v", "-f")
+                        .add(containerId);
+                int status = new Launcher.LocalLauncher(listener).launch()
+                        .cmds(args)
+                        .stdout(listener.getLogger())
+                        .join();
+
+                if (status != 0) {
+                    throw new IOException("Failed to remove Hyper_ slave container " + containerId + ". Status code " + status);
+                }
             }
         }
     }

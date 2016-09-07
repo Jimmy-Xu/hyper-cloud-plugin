@@ -29,7 +29,6 @@ package org.jenkinsci.plugins.hyper;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.Computer;
@@ -46,6 +45,7 @@ import hudson.util.ArgumentListBuilder;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.CheckForNull;
@@ -64,16 +64,23 @@ public class HyperCloud extends Cloud {
 
     private static final Logger LOGGER = Logger.getLogger(HyperCloud.class.getName());
 
+    private final String server;
+
     /** Credentials to connect to Hyper_ infrastructure */
     private final String credentialsId;
 
     private final List<HyperSlaveTemplate> templates;
 
     @DataBoundConstructor
-    public HyperCloud(String name, @Nonnull String credentialsId, List<HyperSlaveTemplate> templates) {
+    public HyperCloud(String name, @Nonnull String server, @Nonnull String credentialsId, List<HyperSlaveTemplate> templates) {
         super(name);
+        this.server = StringUtils.isNotBlank(server) ? server : "tcp://us-west-1.hyper.sh:443";
         this.credentialsId = credentialsId;
         this.templates = templates;
+    }
+
+    public String getServer() {
+        return server;
     }
 
     public String getCredentialsId() {
@@ -136,34 +143,37 @@ public class HyperCloud extends Cloud {
             final String labelString = label == null ? null : label.toString();
             final String name = (label == null ? "" : labelString+"-") + Long.toHexString(System.nanoTime());
 
-            HyperSlave slave = new HyperSlave(name, template.getRemoteFSRoot(), labelString, new ComputerLauncher() {
+            HyperSlave slave = new HyperSlave(HyperCloud.this, name, template.getRemoteFSRoot(), labelString, new ComputerLauncher() {
                 @Override
                 public void launch(SlaveComputer computer, TaskListener listener) throws IOException, InterruptedException {
-                    String rootUrl = Jenkins.getInstance().getRootUrl();;
+                    String rootUrl = Jenkins.getInstance().getRootUrl();
 
-                    ArgumentListBuilder args = new ArgumentListBuilder()
-                            .add("hyper") // TODO path to Hyper CLI
-                            // .add("--config", "...")
-                            .add("run", "-d")
-                            .add("--workdir", template.getRemoteFSRoot())
-                            .add("--label", "org.jenkinsci.plugins.hyper.HyperCloud="+labelString)
-                            .add("-e", "JENKINS_URL="+rootUrl);
+                    try (HyperConfigFile config = HyperCredentials.toConfigFile(server, credentialsId, Jenkins.getInstance())) {
 
-                    args.add(template.getImage())
-                        .add(computer.getJnlpMac())
-                        .add(name);
+                        ArgumentListBuilder args = new ArgumentListBuilder()
+                                .add("hyper") // TODO path to Hyper CLI
+                                .add("--config", config.getPath())
+                                .add("run", "-d")
+                                .add("--workdir", template.getRemoteFSRoot())
+                                .add("--label", "org.jenkinsci.plugins.hyper.HyperCloud=" + labelString)
+                                .add("-e", "JENKINS_URL=" + rootUrl);
 
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                        args.add(template.getImage())
+                                .add(computer.getJnlpMac())
+                                .add(name);
 
-                    int status = new Launcher.LocalLauncher(listener).launch()
-                            .cmds(args)
-                            .stdout(out).stderr(listener.getLogger())
-                            .join();
+                        ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-                    ((HyperSlave) computer.getNode()).setContainerId(out.toString("UTF-8"));
+                        int status = new Launcher.LocalLauncher(listener).launch()
+                                .cmds(args)
+                                .stdout(out).stderr(listener.getLogger())
+                                .join();
 
-                    if (status != 0) {
-                        throw new IOException("Failed to create Hyper_ slave container. Status code "+status);
+                        ((HyperSlave) computer.getNode()).setContainerId(out.toString("UTF-8"));
+
+                        if (status != 0) {
+                            throw new IOException("Failed to create Hyper_ slave container. Status code " + status);
+                        }
                     }
                 }
 
@@ -209,7 +219,7 @@ public class HyperCloud extends Cloud {
             return new StandardListBoxModel()
                     .withMatching(
                             CredentialsMatchers.always(),
-                            CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class,
+                            CredentialsProvider.lookupCredentials(HyperCredentials.class,
                                     Jenkins.getInstance(),
                                     ACL.SYSTEM,
                                     Collections.EMPTY_LIST));
