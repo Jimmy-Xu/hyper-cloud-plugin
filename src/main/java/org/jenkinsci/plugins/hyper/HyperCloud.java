@@ -158,6 +158,7 @@ public class HyperCloud extends Cloud {
                                 .add("--label", "org.jenkinsci.plugins.hyper.HyperCloud=" + labelString)
                                 .add("-e", "JENKINS_URL=" + rootUrl);
 
+                        args.add("--size",template.getSize());
                         args.add(template.getImage())
                                 .add(computer.getJnlpMac())
                                 .add(name);

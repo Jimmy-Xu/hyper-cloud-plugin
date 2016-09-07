@@ -29,7 +29,7 @@
     <f:textbox />
   </f:entry>
 
-  <f:entry field="server" title="${%Hyper_ server)">
+  <f:entry field="server" title="${%Hyper_ server}">
     <f:textbox default="tcp://us-west-1.hyper.sh:443"/>
   </f:entry>
 
