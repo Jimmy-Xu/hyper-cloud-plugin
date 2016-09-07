@@ -31,6 +31,11 @@
   <f:entry title="${%Docker Image}" field="image">
     <f:textbox default="jenkinsci/jnlp-slave" />
   </f:entry>
+
+  <f:entry name="size" title="Container Size" field="size">
+    <f:select default="s4"/>
+  </f:entry>
+
   <f:entry title="${%Filesystem root}" field="remoteFSRoot">
     <f:textbox default="/home/jenkins" />
   </f:entry>
