@@ -134,7 +134,7 @@ public class HyperCloud extends Cloud {
         public Node call() throws Exception {
 
             final String labelString = label == null ? null : label.toString();
-            final String name = (label == null ? "" : labelString+"_") + Long.toHexString(System.nanoTime());
+            final String name = (label == null ? "" : labelString+"-") + Long.toHexString(System.nanoTime());
 
             HyperSlave slave = new HyperSlave(name, template.getRemoteFSRoot(), labelString, new ComputerLauncher() {
                 @Override
@@ -146,13 +146,12 @@ public class HyperCloud extends Cloud {
                             // .add("--config", "...")
                             .add("run", "-d")
                             .add("--workdir", template.getRemoteFSRoot())
-                            .add("--name", name)
-                            .add("--label", "org.jenkinsci.plugins.hyper.HyperCloud="+labelString);
-
-
+                            .add("--label", "org.jenkinsci.plugins.hyper.HyperCloud="+labelString)
+                            .add("-e", "JENKINS_URL="+rootUrl);
 
                     args.add(template.getImage())
-                            .add(String.format("java -jar slave.jar -jnlpUrl %s%s/slave-agent.jnlp -secret %s", rootUrl, computer.getUrl(), computer.getJnlpMac()));
+                        .add(computer.getJnlpMac())
+                        .add(name);
 
                     ByteArrayOutputStream out = new ByteArrayOutputStream();
 
@@ -161,10 +160,13 @@ public class HyperCloud extends Cloud {
                             .stdout(out).stderr(listener.getLogger())
                             .join();
 
+                    ((HyperSlave) computer.getNode()).setContainerId(out.toString("UTF-8"));
+
                     if (status != 0) {
-                        throw new IOException("Failed to create Hyper_ slave container "+status);
+                        throw new IOException("Failed to create Hyper_ slave container. Status code "+status);
                     }
                 }
+
             });
 
             Jenkins.getInstance().addNode(slave);

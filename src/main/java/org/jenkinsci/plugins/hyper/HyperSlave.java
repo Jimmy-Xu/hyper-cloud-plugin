@@ -25,21 +25,28 @@
 
 package org.jenkinsci.plugins.hyper;
 
+import hudson.Launcher;
 import hudson.model.Descriptor;
 import hudson.model.TaskListener;
 import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
 import hudson.slaves.ComputerLauncher;
 import hudson.slaves.RetentionStrategy;
+import hudson.util.ArgumentListBuilder;
+import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.logging.Logger;
 
 public class HyperSlave extends AbstractCloudSlave {
 
+    private static final Logger LOGGER = Logger.getLogger(HyperSlave.class.getName());
+
     private static final long serialVersionUID = 1L;
+    private String containerId;
 
     public HyperSlave(@Nonnull String name, @Nullable String remoteFS, @Nullable String labelString, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
         super(name, "ECS slave", remoteFS, 1, Mode.EXCLUSIVE, labelString, launcher, RetentionStrategy.NOOP, Collections.EMPTY_LIST);
@@ -53,6 +60,28 @@ public class HyperSlave extends AbstractCloudSlave {
 
     @Override
     protected void _terminate(TaskListener listener) throws IOException, InterruptedException {
+        if (containerId != null) {
+            ArgumentListBuilder args = new ArgumentListBuilder()
+                    .add("hyper") // TODO path to Hyper CLI
+                    // .add("--config", "...")
+                    .add("rm", "-v", "-f")
+                    .add(containerId);
+            int status = new Launcher.LocalLauncher(listener).launch()
+                    .cmds(args)
+                    .stdout(listener.getLogger())
+                    .join();
 
+            if (status != 0) {
+                throw new IOException("Failed to remove Hyper_ slave container "+ containerId +". Status code " + status);
+            }
+        }
+    }
+
+    public void setContainerId(String containerId) {
+        this.containerId = containerId;
+    }
+
+    public String getContainerId() {
+        return containerId;
     }
 }

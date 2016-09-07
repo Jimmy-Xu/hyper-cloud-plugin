@@ -30,10 +30,10 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
-import org.apache.log4j.Logger;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.Set;
+import java.util.logging.Logger;
 
 public class HyperSlaveTemplate extends AbstractDescribableImpl<HyperSlaveTemplate> {
 

@@ -64,4 +64,5 @@ public class HyperComputer extends AbstractCloudComputer {
             LOGGER.log(Level.WARNING, "Failed to cleanup hyper_ computer", e);
         }
     }
+
 }
