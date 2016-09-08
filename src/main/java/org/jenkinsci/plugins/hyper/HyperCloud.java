@@ -170,7 +170,7 @@ public class HyperCloud extends Cloud {
                                 .stdout(out).stderr(listener.getLogger())
                                 .join();
 
-                        ((HyperSlave) computer.getNode()).setContainerId(out.toString("UTF-8"));
+                        ((HyperSlave) computer.getNode()).setContainerId(out.toString("UTF-8").split("\n")[0]);
 
                         if (status != 0) {
                             throw new IOException("Failed to create Hyper_ slave container. Status code " + status);
