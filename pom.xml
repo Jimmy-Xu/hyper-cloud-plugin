@@ -9,14 +9,13 @@
         <version>2.7</version>
     </parent>
 
-    <groupId>sh.hyper.plugins</groupId>
-    <artifactId>hyper-slaves</artifactId>
+    <artifactId>hyper-cloud</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>hpi</packaging>
 
-    <name>Hyper_ Slaves Plugin</name>
-    <description>Run builds inside Hyper_ container</description>
-    <url>https://wiki.jenkins-ci.org/display/JENKINS/Hyper_+Slaves+Plugin</url>
+    <name>Hyper_ Cloud Plugin</name>
+    <description>Cloud slave provider relying on Hyper_ containers</description>
+    <url>https://wiki.jenkins-ci.org/display/JENKINS/Hyper+Cloud+Plugin</url>
     <licenses>
         <license>
             <name>MIT License</name>
@@ -26,19 +25,9 @@
 
     <developers>
         <developer>
-            <id>YaoZengzeng</id>
-            <name>Zengzeng Yao</name>
-            <email>yaozengzeng@zju.edu.cn</email>
-        </developer>
-        <developer>
-            <id>xlgao-zju</id>
-            <name>Xianglin Gao</name>
-            <email>xlgao@zju.edu.cn</email>
-        </developer>
-        <developer>
-            <id>Jimmy-Xu</id>
-            <name>Jimmy Xu</name>
-            <email>xjimmyshcn@gmail.com</email>
+            <id>ndeloof</id>
+            <name>Nicolas De Loof</name>
+            <email>nicolas.deloof@gmail.com</email>
         </developer>
     </developers>
 
@@ -49,9 +38,9 @@
     </properties>
 
     <scm>
-        <connection>scm:git:git://github.com/jenkinsci/hyper-slaves-plugin.git</connection>
-        <developerConnection>scm:git:git@github.com:jenkinsci/hyper-slaves-plugin.git</developerConnection>
-        <url>https://github.com/jenkinsci/hyper-slaves-plugin</url>
+        <connection>scm:git:git://github.com/jenkinsci/hyper-cloud-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:jenkinsci/hyper-cloud-plugin.git</developerConnection>
+        <url>https://github.com/jenkinsci/hyper-cloud-plugin</url>
     </scm>
 
     <dependencies>
