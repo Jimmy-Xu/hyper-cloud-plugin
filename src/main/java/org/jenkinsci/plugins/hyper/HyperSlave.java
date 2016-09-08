@@ -34,7 +34,6 @@ import hudson.slaves.ComputerLauncher;
 import hudson.slaves.RetentionStrategy;
 import hudson.util.ArgumentListBuilder;
 import jenkins.model.Jenkins;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -51,7 +50,7 @@ public class HyperSlave extends AbstractCloudSlave {
     private String containerId;
 
     public HyperSlave(HyperCloud cloud, @Nonnull String name, @Nullable String remoteFS, @Nullable String labelString, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
-        super(name, "ECS slave", remoteFS, 1, Mode.EXCLUSIVE, labelString, launcher, RetentionStrategy.NOOP, Collections.EMPTY_LIST);
+        super(name, "Hyper_ slave", remoteFS, 1, Mode.EXCLUSIVE, labelString, launcher, RetentionStrategy.NOOP, Collections.EMPTY_LIST);
         this.cloud = cloud;
     }
 
