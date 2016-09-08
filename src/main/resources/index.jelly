@@ -28,5 +28,5 @@
   This view is used to render the installed plugins page.
 -->
 <div>
-Cloud slave provider relying on Hyper_ containers
+Cloud slave provider relying on <a href="https://hyper.sh/">Hyper_</a> containers
 </div>
